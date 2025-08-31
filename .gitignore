@@ -1,4 +1,5 @@
-.DS_Store
+linear_regression.py
+stock-prediction/.DS_Store
 stock-prediction/parameters.py
 stock-prediction/README.md
 stock-prediction/requirements.txt
@@ -9,9 +10,19 @@ stock-prediction/train.py
 stock-prediction/__pycache__/parameters.cpython-311.pyc
 stock-prediction/__pycache__/stock_prediction.cpython-311.pyc
 stock-prediction/csv-results/2021-05-31_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-seq-50-step-15-layers-2-units-256.csv
+stock-prediction/csv-results/2025-08-24_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256.csv
 stock-prediction/data/AMZN_2021-05-31.csv
+stock-prediction/data/AMZN_2025-08-24.csv
+stock-prediction/logs/.DS_Store
+stock-prediction/logs/2020-12-11_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-seq-50-step-15-layers-2-units-256/.DS_Store
 stock-prediction/logs/2020-12-11_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-seq-50-step-15-layers-2-units-256/train/events.out.tfevents.1607697615.DESKTOP-JCAH48A.12800.1315.v2
 stock-prediction/logs/2020-12-11_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-seq-50-step-15-layers-2-units-256/train/events.out.tfevents.1607697620.DESKTOP-JCAH48A.profile-empty
 stock-prediction/logs/2020-12-11_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-seq-50-step-15-layers-2-units-256/train/plugins/profile/2020-12-11_15-40-20/local.trace
 stock-prediction/logs/2020-12-11_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-seq-50-step-15-layers-2-units-256/validation/events.out.tfevents.1607697622.DESKTOP-JCAH48A.12800.7403.v2
+stock-prediction/logs/2025-08-24_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256/train/events.out.tfevents.1756032794.Amandas-MacBook-Pro.local.45807.0.v2
+stock-prediction/logs/2025-08-24_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256/validation/events.out.tfevents.1756032797.Amandas-MacBook-Pro.local.45807.1.v2
+stock-prediction/logs/2025-08-24_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-seq-50-step-15-layers-2-units-256/train/events.out.tfevents.1756032621.Amandas-MacBook-Pro.local.45705.0.v2
 stock-prediction/results/2021-05-31_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-seq-50-step-15-layers-2-units-256.h5
+stock-prediction/results/2025-08-24_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256.weights.h5
+.DS_Store
+v1/data/CBA.AX_2020-01-01_2023-08-01.csv

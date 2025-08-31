@@ -16,14 +16,17 @@
 # pip install pandas-datareader
 # pip install yfinance
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import pandas_datareader as web
 import datetime as dt
 import tensorflow as tf
+import yfinance as yf       # data = web.DataReader(COMPANY, DATA_SOURCE, TRAIN_START, TRAIN_END) # Read data using yahoo
 
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, LSTM, InputLayer
 
@@ -34,19 +37,105 @@ from tensorflow.keras.layers import Dense, Dropout, LSTM, InputLayer
 # If so, load the saved data
 # If not, save the data into a directory
 #------------------------------------------------------------------------------
-# DATA_SOURCE = "yahoo"
 COMPANY = 'CBA.AX'
-
 TRAIN_START = '2020-01-01'     # Start date to read
 TRAIN_END = '2023-08-01'       # End date to read
 
-# data = web.DataReader(COMPANY, DATA_SOURCE, TRAIN_START, TRAIN_END) # Read data using yahoo
+def load_data (
+        COMPANY, 
+        TRAIN_START, 
+        TRAIN_END, 
+        scale = True,
+        shuffle = True,
+        lookup_step = 1, 
+        split_by_date = True,
+        test_size = 0.2, 
+        feature_columns = ['Close', 'Volume', 'Open', 'High', 'Low'],
+        nan_statedgy = "drop",
+        use_cache = True,
+        cache_dir = "data"
+        ):
+    
+    """
+    Loads data from Yahoo Finance source, as well as scaling, shuffling, normalizing and splitting.
+    Params:
+    COMPANY (str/pd.DataFrame): the ticker you want to load, examples include AAPL, TESL, etc.
+    TRAIN_START, TRAIN_END: sets start and end date for data gathering.
+    scale (bool): whether to scale prices from 0 to 1, default is True
+    shuffle (bool): whether to shuffle the dataset (both training & testing), default is True
+    lookup_step (int): the future lookup step to predict, default is 1 (e.g next day)
+    split_by_date (bool): whether we split the dataset into training/testing by date, setting it 
+    to False will split datasets in a random way
+    test_size (float): ratio for test data, default is 0.2 (20% testing data)
+    feature_columns (list): the list of features to use to feed into the model, default is everything grabbed from yahoo_fin
+    nan_stratedgy: sets bhaviour for columns with missing rows
+    use_chache: Load stock data from local file if available, if not load from load from web and save as cache
+    cach_dir: Sets name of folder to save cache into if use_cache is set to true.
+    """
+
+    file_path = os.path.join(cache_dir, f"{COMPANY}_{TRAIN_START}_{TRAIN_END}.csv")     #create cache directory
+    if use_cache and os.path.exists(file_path):
+        df = pd.read_csv(file_path, index_col = 0)              # Load data if file exists
+    else:
+        df = yf.download(COMPANY, TRAIN_START, TRAIN_END, auto_adjust=True)
+
+        # Flatten MultiIndex columns if needed
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.map(lambda x: x[0])  # Keep only the data labels
+
+        if use_cache:
+            os.makedirs(cache_dir, exist_ok=True)
+            df.index.name = "Date"
+            df.to_csv(file_path)
 
 
-import yfinance as yf
 
-# Get the data for the stock AAPL
-data = yf.download(COMPANY,TRAIN_START,TRAIN_END)
+    if nan_statedgy == "drop":
+        df.dropna(inplace = True)                       # If data is missing remove entire row from dataframe
+    elif nan_statedgy == "fill":
+        df.fillna(method = "ffill", inplace = True)     # If data is missing use foward fill to reapeat last known cell
+
+
+    scalers = {}        # Initialise an empty dictionary call scalers
+    for col in feature_columns:     # loop through columns
+        scaler = MinMaxScaler()     # create new instance of MinMaxScaler for column
+        df[col] = scaler.fit_transform(df[col].values.reshape(-1,1))        # Gets values from column as numpy array and reshapes into a 2D column vector for fit_transform  
+        scalers[col] = scaler       # Saves scaler object into dictionary
+
+    X = []
+    Y = []
+
+    for i in range (lookup_step, len(df)):
+        seq = df[feature_columns].iloc[i - lookup_step:i].values
+        X.append(seq)
+        Y.append(df["Close"].iloc[i])
+
+    X = np.array(X)     # Convert to numpy array
+    Y = np.array(Y)
+
+    if split_by_date:                               
+        split_index = int(len(X) * (1 - test_size))         # Calculates number of samples to put into training set
+        X_train, X_test = X[:split_index], X[split_index:]  # Gets first block from beginning to split index
+        y_train, y_test = Y[:split_index], Y[split_index:]  # Gets last block from slpit to end
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(            # if not split by date 
+            X, Y, test_size=test_size, shuffle=shuffle, random_state=42     # set seed for random
+        )
+    
+
+    last_sequence = df[feature_columns].iloc[-lookup_step:].values
+
+    return {
+       "X_train": np.array(X_train),
+        "X_test": np.array(X_test),
+        "y_train": np.array(y_train),
+        "y_test": np.array(y_test),
+        "scalers": scalers if scale else None,
+        "df": df,
+        "last_sequence": last_sequence
+    }
+
+
 
 #------------------------------------------------------------------------------
 # Prepare Data
@@ -58,6 +147,8 @@ data = yf.download(COMPANY,TRAIN_START,TRAIN_END)
 # 3) Change the Prediction days
 #------------------------------------------------------------------------------
 PRICE_VALUE = "Close"
+data_dict = load_data(COMPANY, TRAIN_START, TRAIN_END)
+data = data_dict["df"]  # the original preprocessed DataFrame
 
 scaler = MinMaxScaler(feature_range=(0, 1)) 
 # Note that, by default, feature_range=(0, 1). Thus, if you want a different 
