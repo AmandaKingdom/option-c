@@ -26,3 +26,17 @@ stock-prediction/results/2021-05-31_AMZN-sh-1-sc-1-sbd-0-huber_loss-adam-LSTM-se
 stock-prediction/results/2025-08-24_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256.weights.h5
 .DS_Store
 v1/data/CBA.AX_2020-01-01_2023-08-01.csv
+naive_bayes.py
+PCA.ipynb
+stock-prediction/csv-results/2025-09-07_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256.csv
+stock-prediction/data/AMZN_2025-09-07.csv
+.gitignore
+v1_2/stock_prediction_2.py
+.gitignore
+v1/data/CBA.AX_2020-01-01_2023-01-01.csv
+stock-prediction/results/2025-09-07_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256.weights.h5
+.gitignore
+stock-prediction/logs/2025-09-07_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256/validation/events.out.tfevents.1757215065.Amandas-MacBook-Pro.local.83568.1.v2
+.gitignore
+.gitignore
+stock-prediction/logs/2025-09-07_AMZN-sh-1-sc-1-sbd-0-huber-adam-LSTM-seq-50-step-15-layers-2-units-256/train/events.out.tfevents.1757215062.Amandas-MacBook-Pro.local.83568.0.v2

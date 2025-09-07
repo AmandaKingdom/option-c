@@ -24,6 +24,8 @@ import pandas_datareader as web
 import datetime as dt
 import tensorflow as tf
 import yfinance as yf       # data = web.DataReader(COMPANY, DATA_SOURCE, TRAIN_START, TRAIN_END) # Read data using yahoo
+import mplfinance as mpf
+
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -39,7 +41,7 @@ from tensorflow.keras.layers import Dense, Dropout, LSTM, InputLayer
 #------------------------------------------------------------------------------
 COMPANY = 'CBA.AX'
 TRAIN_START = '2020-01-01'     # Start date to read
-TRAIN_END = '2023-08-01'       # End date to read
+TRAIN_END = '2023-01-01'       # End date to read
 
 def load_data (
         COMPANY, 
@@ -75,7 +77,7 @@ def load_data (
 
     file_path = os.path.join(cache_dir, f"{COMPANY}_{TRAIN_START}_{TRAIN_END}.csv")     #create cache directory
     if use_cache and os.path.exists(file_path):
-        df = pd.read_csv(file_path, index_col = 0)              # Load data if file exists
+        df = pd.read_csv(file_path, index_col = 0,parse_dates = True)              # Load data if file exists, load index column as date in datetime format
     else:
         df = yf.download(COMPANY, TRAIN_START, TRAIN_END, auto_adjust=True)
 
@@ -85,6 +87,7 @@ def load_data (
 
         if use_cache:
             os.makedirs(cache_dir, exist_ok=True)
+            df.index = pd.to_datetime(df.index)  # Ensure the index is in datetime format
             df.index.name = "Date"
             df.to_csv(file_path)
 
@@ -94,7 +97,6 @@ def load_data (
         df.dropna(inplace = True)                       # If data is missing remove entire row from dataframe
     elif nan_statedgy == "fill":
         df.fillna(method = "ffill", inplace = True)     # If data is missing use foward fill to reapeat last known cell
-
 
     scalers = {}        # Initialise an empty dictionary call scalers
     for col in feature_columns:     # loop through columns
@@ -249,7 +251,7 @@ model.compile(optimizer='adam', loss='mean_squared_error')
 
 # Now we are going to train this model with our training data 
 # (x_train, y_train)
-model.fit(x_train, y_train, epochs=25, batch_size=32)
+model.fit(x_train, y_train, epochs=100, batch_size=32)
 # Other parameters to consider: How many rounds(epochs) are we going to 
 # train our model? Typically, the more the better, but be careful about
 # overfitting!
@@ -282,13 +284,13 @@ TEST_END = '2024-07-02'
 
 test_data = yf.download(COMPANY,TEST_START,TEST_END)
 
-
 # The above bug is the reason for the following line of code
 # test_data = test_data[1:]
 
 actual_prices = test_data[PRICE_VALUE].values
 
 total_dataset = pd.concat((data[PRICE_VALUE], test_data[PRICE_VALUE]), axis=0)
+
 
 model_inputs = total_dataset[len(total_dataset) - len(test_data) - PREDICTION_DAYS:].values
 # We need to do the above because to predict the closing price of the fisrt
@@ -336,22 +338,78 @@ predicted_prices = scaler.inverse_transform(predicted_prices)
 #------------------------------------------------------------------------------
 
 plt.plot(actual_prices, color="black", label=f"Actual {COMPANY} Price")
-plt.plot(predicted_prices, color="green", label=f"Predicted {COMPANY} Price")
+plt.plot(predicted_prices, color="blue", label=f"Predicted {COMPANY} Price")
 plt.title(f"{COMPANY} Share Price")
 plt.xlabel("Time")
 plt.ylabel(f"{COMPANY} Share Price")
 plt.legend()
 plt.show()
 
+def plot_candles(data, n_days = 3):           # funtion to plot candlestick chart
+    if n_days > 1:                          # if n_days is more than 1, group data into n day intervals, with 1 candle per group
+        data = data.resample(f'{n_days}D').agg({    # Use panda to goup data into tme bins of n calendar days
+            'Open': 'first',                    # take first opening price on n day group
+            'High': 'max',                   # take maximum price in n day group
+            'Low': 'min',                 # take minimum price in n day group
+            'Close': 'last',              # take last closing price in n day group
+            'Volume': 'sum'                # add up all volume in n day group
+        }).dropna()                     # remove any rows with missing values
+
+    mpf.plot(data, type='candle', style='charles')
+
+plot_candles(data, n_days=50)  # 5-trading-day candlesticks
+
+def plot_boxplot(data, column='Close', n_days=5):
+    """
+    Displays a boxplot chart of stock market data over a moving window of n trading days.
+
+    Parameters:
+    -----------
+    data : pd.DataFrame
+        The stock market data with a datetime index and price columns (e.g., 'Close', 'High', 'Low').
+
+    column : str
+        The name of the column to plot (e.g., 'Close', 'High', 'Low'). Default is 'Close'.
+
+    n_days : int
+        The number of consecutive trading days to include in each moving window.
+
+    Returns:
+    --------
+    None (displays the boxplot chart)
+    """
+    # Safety check: ensure the column exists
+    if column not in data.columns:
+        raise ValueError(f"Column '{column}' not found in data")
+
+    # Create moving windows
+    windows = []
+    labels = []
+
+    for i in range(len(data) - n_days + 1):
+        window = data[column].iloc[i:i + n_days]
+        windows.append(window.values)
+        labels.append(data.index[i].strftime('%Y-%m-%d'))  # label by window start date
+
+    # Plotting
+    plt.figure(figsize=(15, 6))
+    plt.boxplot(windows, patch_artist=True)
+    plt.title(f'Moving {n_days}-Day Boxplot for {column} Prices')
+    plt.xlabel('Window Start Date')
+    plt.ylabel('Price')
+    plt.xticks(ticks=np.arange(1, len(labels) + 1, step=max(len(labels)//10, 1)), 
+               labels=labels[::max(len(labels)//10, 1)], rotation=45)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+plot_boxplot(data, n_days = 700)  
 #------------------------------------------------------------------------------
 # Predict next day
 #------------------------------------------------------------------------------
-
-
 real_data = [model_inputs[len(model_inputs) - PREDICTION_DAYS:, 0]]
 real_data = np.array(real_data)
 real_data = np.reshape(real_data, (real_data.shape[0], real_data.shape[1], 1))
-
 prediction = model.predict(real_data)
 prediction = scaler.inverse_transform(prediction)
 print(f"Prediction: {prediction}")
