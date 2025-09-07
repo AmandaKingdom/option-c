@@ -251,7 +251,7 @@ model.compile(optimizer='adam', loss='mean_squared_error')
 
 # Now we are going to train this model with our training data 
 # (x_train, y_train)
-model.fit(x_train, y_train, epochs=100, batch_size=32)
+model.fit(x_train, y_train, epochs=10, batch_size=32)
 # Other parameters to consider: How many rounds(epochs) are we going to 
 # train our model? Typically, the more the better, but be careful about
 # overfitting!
@@ -359,29 +359,8 @@ def plot_candles(data, n_days = 3):           # funtion to plot candlestick char
 
 plot_candles(data, n_days=50)  # 5-trading-day candlesticks
 
-def plot_boxplot(data, column='Close', n_days=5):
-    """
-    Displays a boxplot chart of stock market data over a moving window of n trading days.
-
-    Parameters:
-    -----------
-    data : pd.DataFrame
-        The stock market data with a datetime index and price columns (e.g., 'Close', 'High', 'Low').
-
-    column : str
-        The name of the column to plot (e.g., 'Close', 'High', 'Low'). Default is 'Close'.
-
-    n_days : int
-        The number of consecutive trading days to include in each moving window.
-
-    Returns:
-    --------
-    None (displays the boxplot chart)
-    """
-    # Safety check: ensure the column exists
-    if column not in data.columns:
-        raise ValueError(f"Column '{column}' not found in data")
-
+def plot_boxplot(data, column='Close', n_days=5):  # function to plot boxplot chart
+    
     # Create moving windows
     windows = []
     labels = []
