@@ -30,7 +30,7 @@ import mplfinance as mpf
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, LSTM, InputLayer
+from tensorflow.keras.layers import Dense, Dropout, LSTM, InputLayer, GRU,SimpleRNN, Bidirectional
 
 #------------------------------------------------------------------------------
 # Load Data
@@ -171,11 +171,50 @@ y_train = data_dict["y_train"]
 # If not, save the data into a directory
 # 2) Change the model to increase accuracy?
 #------------------------------------------------------------------------------
-model = Sequential() # Basic neural network
+def create_model(sequence_length,               # length of input sequence (steps)
+                  n_features,                   # number of input feaures per step
+                  units = 256,                  # number of neurons per cell
+                  cell = LSTM,                  # RNN cell type
+                  n_layers = 2,                 #number of RNN layers
+                  dropout = 0.3,                # post layer dropout rate
+                  loss = "mean_absolute_error",  #loss function
+                  optimizer = "rmsprop",        # optimizer
+                  bidirectional = False ):      # whether to use an RNN that goes both ways
+    model = Sequential()
+    for i in range(n_layers):
+        if i == 0:
+            # first layer
+            if bidirectional:
+                model.add(Bidirectional(cell(units, return_sequences = True), input_shape = (sequence_length, n_features)))
+            else:
+                model.add(cell(units, return_sequences = True, input_shape = (sequence_length, n_features)))
+        elif i == n_layers - 1:
+            # last layer
+            if bidirectional:
+                model.add(Bidirectional(cell(units, return_sequences = False)))
+            else:
+                model.add(cell(units, return_sequences = False))
+        else:
+            # hidden layers
+            if bidirectional:
+                model.add(Bidirectional(cell(units, return_sequences = True)))
+            else:
+                model.add(cell(units, return_sequences = True))
+        # add dropout filter after each layer
+        model.add(Dropout(dropout))
+    model.add(Dense(1, activation = "linear"))
+    model.compile(loss = loss, metrics = ["mean_absolute_error"], optimizer = optimizer)
+    model.fit(x_train, y_train, epochs=50, batch_size=32)
+
+    return model
+        
+    
+    
+    # Basic neural network
 # See: https://www.tensorflow.org/api_docs/python/tf/keras/Sequential
 # for some useful examples
 
-model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], x_train.shape[2])))
+    #model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], x_train.shape[2])))
 
 # This is our first hidden layer which also spcifies an input layer. 
 # That's why we specify the input shape for this layer; 
@@ -194,25 +233,25 @@ model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], x
 # This is one of the parameters you want to play with to see what number
 # of units will give you better prediction quality (for your problem)
 
-model.add(Dropout(0.2))
+        #model.add(Dropout(0.2))
 # The Dropout layer randomly sets input units to 0 with a frequency of 
 # rate (= 0.2 above) at each step during training time, which helps 
 # prevent overfitting (one of the major problems of ML). 
 
-model.add(LSTM(units=50, return_sequences=True))
+        #model.add(LSTM(units=50, return_sequences=True))
 # More on Stacked LSTM:
 # https://machinelearningmastery.com/stacked-long-short-term-memory-networks/
 
-model.add(Dropout(0.2))
-model.add(LSTM(units=50))
-model.add(Dropout(0.2))
+        #model.add(Dropout(0.2))
+        #model.add(LSTM(units=50))
+        #model.add(Dropout(0.2))
 
-model.add(Dense(units=1)) 
+        #model.add(Dense(units=1)) 
 # Prediction of the next closing value of the stock price
 
 # We compile the model by specify the parameters for the model
 # See lecture Week 6 (COS30018)
-model.compile(optimizer='adam', loss='mean_squared_error')
+        #model.compile(optimizer='adam', loss='mean_squared_error')
 # The optimizer and loss are two important parameters when building an 
 # ANN model. Choosing a different optimizer/loss can affect the prediction
 # quality significantly. You should try other settings to learn; e.g.
@@ -222,7 +261,7 @@ model.compile(optimizer='adam', loss='mean_squared_error')
 
 # Now we are going to train this model with our training data 
 # (x_train, y_train)
-model.fit(x_train, y_train, epochs=10, batch_size=32)
+        #model.fit(x_train, y_train, epochs=10, batch_size=32)
 # Other parameters to consider: How many rounds(epochs) are we going to 
 # train our model? Typically, the more the better, but be careful about
 # overfitting!
@@ -250,6 +289,18 @@ model.fit(x_train, y_train, epochs=10, batch_size=32)
 x_test = data_dict["X_test"]
 y_test = data_dict["y_test"]
 
+model = create_model(
+    sequence_length = x_train.shape[1],
+    n_features = x_train.shape[2],
+    units = 256,
+    cell = LSTM,
+    n_layers = 2,
+    dropout = 0.3,
+    loss = "mean_squared_error",
+    optimizer = "RMSprop",
+    bidirectional = False
+)
+    
 actual_prices = scaler.inverse_transform(y_test.reshape(-1, 1))
 
 predicted_prices = model.predict(x_test)
